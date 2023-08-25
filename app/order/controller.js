@@ -5,18 +5,23 @@ const CartItem = require("../cart-item/model");
 const DeliveryAddress = require("../DeliveryAdress/model");
 const store = async (req, res, next) => {
   try {
-    let { delivery_fee, delivery_address } = req.body;
-    let items = await CartItem.find({ user: req.user._id }).populate("product");
-    if (!items) {
+    let { delivery_fee, delivery_address, itemId } = req.body;
+    let items = await CartItem.find({
+      user: req.user._id,
+      _id: { $in: itemId },
+    }).populate("product");
+    if (!items || items.length === 0) {
       return res.json({
         error: 1,
-        message: `You're not create order because you have not items in cart`,
+        message: `You cannot create an order because you have no items in your cart`,
       });
     }
+
+    // If items exist, proceed with order creation
     let address = await DeliveryAddress.findById(delivery_address);
     let order = await Order({
       _id: new Types.ObjectId(),
-      status: "witing_payment",
+      status: "waiting_payment",
       delivery_fee: delivery_fee,
       delivery_address: {
         provinsi: address.propinsi,
@@ -27,9 +32,11 @@ const store = async (req, res, next) => {
       },
       user: req.user._id,
     });
+    console.log(items, "INI ITEM @@@@@");
     let orderItems = await OrderItem.insertMany(
       items.map((item) => ({
         ...item,
+        _id: item._id,
         name: item.product.name,
         qty: parseInt(item.qty),
         price: parseInt(item.product.price),
@@ -37,9 +44,16 @@ const store = async (req, res, next) => {
         product: item.product._id,
       }))
     );
+
     orderItems.forEach((item) => order.order_items.push(item));
-    order.save();
-    // await CartItem.deleteMany({ user: req.user._id });
+    await order.save();
+    const orderedItemIds = orderItems.map((item) => item);
+    console.log(orderedItemIds, "INI orderedItemIds");
+    const deletes = await CartItem.deleteMany({
+      user: req.user._id,
+      _id: { $in: orderedItemIds },
+    });
+    console.log(deletes, "INI DELETES");
     return res.json(order);
   } catch (err) {
     if (err && err.name == "ValidationError") {

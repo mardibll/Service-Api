@@ -7,14 +7,16 @@ const update = async (req, res, next) => {
     const user_id = req.user._id;
     console.log(items, "INI ITEMS");
     const productid = items.map((item) => item.product._id);
+    console.log(productid, "INI PRO ID");
     const products = await Product.find({ _id: { $in: productid } });
     console.log(productid, "INI PRODUCTS");
+
     let cartItems = items.map((item) => {
-      console.log(item.product, "INI ITEM @");
+      console.log(item.product._id, "INI ITEM @");
       let relatedProduct = products.find(
         (product) => product._id.toString() === item.product._id
       );
-      console.log(relatedProduct, "INI RELASI");
+
       return {
         product: relatedProduct._id,
         price: relatedProduct.price,
@@ -24,7 +26,7 @@ const update = async (req, res, next) => {
         qty: item.qty,
       };
     });
-    console.log(cartItems, "INI CAR ITEMS");
+
     await CartItem.bulkWrite(
       cartItems.map((item) => {
         return {
@@ -51,51 +53,6 @@ const update = async (req, res, next) => {
     next(err);
   }
 };
-
-// const update = async (req, res, next) => {
-//   const user_id = req.user._id;
-//   try {
-//     const { items } = req.body;
-//     console.log(items, "INI ITEMS");
-
-//     const updatedCartItems = [];
-
-//     // Update cart items for the current user
-//     for (const item of items) {
-//       const { product, qty } = item;
-
-//       // Check if the product belongs to the user
-//       const existingCartItem = await CartItem.findOne({
-//         user: user_id,
-//         _id: product,
-//       });
-
-//       if (!existingCartItem) {
-//         // If cart item doesn't exist for the user, return a "Not Found" response
-//         return res.status(404).json({
-//           error: "item not found",
-//         });
-//       }
-
-//       // Update the quantity of the existing cart item
-//       existingCartItem.qty = qty;
-//       const updatedCartItem = await existingCartItem.save();
-
-//       updatedCartItems.push(updatedCartItem);
-//     }
-
-//     return res.json(updatedCartItems);
-//   } catch (err) {
-//     if (err && err.name === "ValidationError") {
-//       return res.status(400).json({
-//         error: 1,
-//         message: err.message,
-//         fields: err.errors,
-//       });
-//     }
-//     next(err);
-//   }
-// };
 
 const index = async (req, res, next) => {
   try {
@@ -185,5 +142,14 @@ const create = async (req, res, next) => {
     next(err);
   }
 };
-
-module.exports = { index, update, create };
+const destroy = async (req, res, next) => {
+  try {
+    const cartId = req.params.id;
+    await CartItem.findByIdAndDelete(cartId);
+    console.log(CartItem,"INI CART ITEMS");
+    return res.json({ message: "product deleted successfully" });
+  } catch (error) {
+    next(err);
+  }
+};
+module.exports = { index, update, create,destroy };
