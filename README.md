@@ -1,4 +1,4 @@
-## [1 Service-Api](https://github.com/mardibll/Service-Api.git)
+## [Service-Api](https://github.com/mardibll/Service-Api.git)
 
 This project is a specialized API server designed for the management of product sales, encompassing key features such as data management, products, cart, user, and invoice creation. This server is backed by MongoDB and utilizes Mongoose for database management.
 
